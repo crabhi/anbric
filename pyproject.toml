@@ -1,0 +1,25 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel"
+]
+
+build-backend = "setuptools.build_meta"
+
+[tool.poetry]
+name = "anbric"
+version = "0.1.0"
+description = ""
+authors = ["Filip Sedlak <filip@sedlakovi.org>"]
+
+[tool.poetry.dependencies]
+python = ">3.9,<4"
+ansible = {version="^4", optional=true}
+mitogen = "^0.3.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6"
+ipython = "*"
+
+[tool.poetry.extras]
+ansible = ["ansible"]
