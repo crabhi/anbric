@@ -13,7 +13,7 @@ description = ""
 authors = ["Filip Sedlak <filip@sedlakovi.org>"]
 
 [tool.poetry.dependencies]
-python = ">3.9,<4"
+python = ">=3.8,<4"
 ansible = {version="^4", optional=true}
 mitogen = "^0.3.0"
 

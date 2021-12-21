@@ -387,7 +387,7 @@ ansible = ["ansible"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">3.9,<4"
+python-versions = ">=3.8,<4"
 content-hash = "16d3b0199be04c733b82625b9048a43347526497c8a6e1ee1ba50b6fab941bd4"
 
 [metadata.files]
