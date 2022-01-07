@@ -30,6 +30,8 @@ class Result:
 class Group:
     name: str
     hosts: "List[Host]"
+    vars: Dict[str, str]
+    connection: Dict[str, str]
 
 
 @dataclass
@@ -41,7 +43,7 @@ class Host:
 
     @property
     def ssh_args(self):
-        return {'hostname': self.name, 'python_path': 'python3', **self.connection}
+        return {'hostname': self.name, 'python_path': 'python3', **self.group.connection, **self.connection}
 
 
 class Inventory:
@@ -49,13 +51,18 @@ class Inventory:
         with open(fname) as f:
             config = toml.load(f)
 
-        self.groups = {s: Group(name=s, hosts=[]) for s in config}
+        self.groups = {s: Group(
+            name=s, hosts=[], vars=val.get('vars', {}), connection=val.get('_connection', {})
+        ) for s, val in config.items()}
 
         for group in self.groups.values():
             for host, host_config in config[group.name].items():
+                if host.startswith('_'):
+                    continue
+
                 group.hosts.append(Host(
                     name=host, group=group,
-                    connection=host_config.get('connection', {}),
+                    connection=host_config.get('_connection', {}),
                     vars=host_config.get('vars', {})
                 ))
 
@@ -66,7 +73,11 @@ class Inventory:
         if selector in self.groups:
             return self.groups[selector].hosts
 
-        raise NotImplementedError()
+        for h in self.all_hosts():
+            if selector == h.name:
+                return [h]
+
+        raise ValueError(f'No group or host matches {selector}')  # TODO user-friendly
 
     def all_hosts(self):
         for g in self.groups.values():
@@ -75,7 +86,6 @@ class Inventory:
 
 
 def play_task(func, router, host):
-    print(host.ssh_args)
     Vars.vars['host'] = host
 
     kwargs = {p: Vars.vars[p] for p in inspect.signature(func).parameters if p in Vars.vars}

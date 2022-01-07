@@ -1,3 +1,13 @@
+[servers]
+_connection = { username="user", ssh_args=["-o", "UserKnownHostsFile=docker/known_hosts", "-o", "IdentityFile=docker/test_key"] }
+
+# TODO vars configuration to Python?
+
 [servers.test1]
-connection = { hostname="127.0.1.1", username="user", ssh_args=["-o", "UserKnownHostsFile=docker/known_hosts", "-o", "IdentityFile=docker/test_key"] }
-vars = {}
+_connection = { hostname="127.0.1.1" }
+
+[servers.test2]
+_connection = { hostname="127.0.1.2" }
+
+[servers.test3]
+_connection = { hostname="127.0.1.3" }
