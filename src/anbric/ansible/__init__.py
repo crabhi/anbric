@@ -1,25 +1,12 @@
-import contextlib
 import importlib
 import json
-import tempfile
-import threading
-import traceback
-from dataclasses import dataclass
 import sys
+import tempfile
+import traceback
 
-import mitogen
-import mitogen.master
 from ansible_mitogen.runner import NewStyleStdio, TemporaryArgv, TempFileWatcher, AtExitWrapper
 
-
-@dataclass
-class Result:
-    rc: int
-    stdout: str
-    stderr: str
-    changed: bool = None
-    error: str = None
-    res: dict = None
+from anbric.core import Vars, Result
 
 
 class NewStyleRunner:
@@ -102,50 +89,18 @@ class NewStyleRunner:
         return self._temp_dir
 
 
-def command(context, command_string):
-    received = context.call(execute, 'ansible.modules.command', {'_raw_params': command_string})
-
-    stdout = json.loads(received['stdout'])
-    return Result(rc=received['rc'], changed=stdout['changed'], res=stdout,
-                  stdout=received['stdout'], stderr=received['stderr'])
-
-
-def execute(module_name, args):
+def _execute(module_name, args):
     with NewStyleRunner(module_name, args=args) as r:
         return r.run()
 
 
-class Vars(threading.local):
-    pass
+def ansible_module(module_name, params):
+    received = Vars.context.call(_execute, module_name, params)
+
+    stdout = json.loads(received['stdout'])
+    res = Result(rc=received['rc'], changed=stdout['changed'], res=stdout,
+                 stdout=received['stdout'], stderr=received['stderr'])
+    print(res)
+    return res
 
 
-def play(*args, **kwargs):
-    settings = {
-        'python_path': 'python3',
-    }
-
-    def wrapper(func):
-        def _executable(*args, **kwargs):
-            broker = mitogen.master.Broker()
-            router = mitogen.master.Router(broker)
-
-            hosts = settings.pop('hosts')
-            # TODO For each host, create a thread that will connect to it and execute the tasks
-
-            Vars.context = router.ssh(hostname='127.0.1.1', **settings)
-
-            try:
-                return func(*args, **kwargs)
-            finally:
-                Vars.context = None
-                broker.shutdown()
-        return _executable()
-
-    if len(args) == 1 and callable(args[0]):
-        return wrapper(args[0])
-    else:
-        settings = {**settings, **kwargs}
-        return wrapper
-
-
-variables = Vars()

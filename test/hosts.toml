@@ -1,0 +1,3 @@
+[servers.test1]
+connection = { hostname="127.0.1.1", username="user", ssh_args=["-o", "UserKnownHostsFile=docker/known_hosts", "-o", "IdentityFile=docker/test_key"] }
+vars = {}
