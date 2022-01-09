@@ -102,5 +102,3 @@ def ansible_module(module_name, params):
                  stdout=received['stdout'], stderr=received['stderr'])
     print(res)
     return res
-
-

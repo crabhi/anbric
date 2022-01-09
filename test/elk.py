@@ -30,7 +30,7 @@ def _deploy_filebeat_conf(client):
     )
 
     template(
-        src='metricbeat.yml'
+        src='metricbeat.yml',
         dest='/etc/filebeat/filebeat.yml',
         mode=0o644,
         _notify=restart_metricbeat,

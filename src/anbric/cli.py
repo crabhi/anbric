@@ -65,15 +65,11 @@ def anbric_play(inventory, playbook, play, loglevel):
 
         # noinspection PyBroadException
         try:
-            play_exec(inventory)
-        except UserReadableError as e:
-            if logging.getLevelName(loglevel) <= logging.DEBUG:
-                LOG.exception(f'Exception in play {playbook}.{play}', stacklevel=5)
+            all_success, results = play_exec(inventory)
+            if all_success:
+                exit(0)
             else:
-                LOG.error(f'[bold red]{e}[/]', extra={"markup": True})
-            exit(1)
+                exit(1)
         except Exception:
             LOG.exception(f'Exception in play {playbook}.{play}', stacklevel=5)
             exit(1)
-        else:
-            exit(0)

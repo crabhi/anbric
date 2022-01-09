@@ -1,6 +1,7 @@
-from ..ansible import ansible_module
+from ..ansible import ansible_module, _execute
+from ..core import task
 
 
+@task
 def command(command_string):
-    return ansible_module('ansible.modules.command', {'_raw_params': command_string})
-
+    return _execute('ansible.modules.command', {'_raw_params': command_string})

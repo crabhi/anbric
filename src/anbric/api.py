@@ -13,7 +13,7 @@ class Connection(ABC):
     python_path: str = 'python3'
 
     @abc.abstractmethod
-    def connect(self, parents: 'Set[Connection]', router: mitogen.parent.Router) -> mitogen.parent.Connection:
+    def connection_method_name(self) -> str:
         raise NotImplementedError()
 
 
@@ -24,13 +24,8 @@ class SSHConnection(Connection):
     port: int = None
     ssh_args: List[str] = None
 
-    def connect(self, parents: 'Set[SSHConnection]', router: mitogen.parent.Router) -> mitogen.ssh.Connection:
-        args = {}
-        for conn in list(parents) + [self]:
-            for k, v in conn.__dict__.items():
-                if v is not None:
-                    args[k] = v
-        return router.ssh(**args)
+    def connection_method_name(self) -> str:
+        return 'ssh'
 
 
 @dataclass

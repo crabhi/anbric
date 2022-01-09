@@ -1,10 +1,14 @@
+import logging
+
 from anbric.ansible.modules import command
 from anbric.core import play
+
+LOG = logging.getLogger(__name__)
 
 
 @play(hosts='all')
 def test_play(host):
-    print("Running at host", host.id)
+    LOG.warning("Running at host %s", host.id)
     command('hostname')
 
 
