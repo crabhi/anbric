@@ -1,18 +1,35 @@
+import importlib
 import inspect
+import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Any, Set
 
 import mitogen
 import mitogen.master
-import toml
+from mitogen.core import StreamError
+from mitogen.parent import Router
+
+from anbric.api import Connection, Host
 
 PLAY_MARKER = object()
 
 
 class Vars(threading.local):
+    pass
+
+
+class UserReadableError(Exception):
+    pass
+
+
+class SelectorDoesntMatch(UserReadableError):
+    pass
+
+
+class AnbricConnectionError(UserReadableError):
     pass
 
 
@@ -27,44 +44,49 @@ class Result:
 
 
 @dataclass
-class Group:
-    name: str
-    hosts: "List[Host]"
-    vars: Dict[str, str]
-    connection: Dict[str, str]
+class InventoryGroup:
+    id: str
+    hosts: "Set[InventoryHost]"
 
 
-@dataclass
-class Host:
-    name: str
-    group: Group
-    vars: Dict[str, str]
-    connection: Dict[str, str]
-
-    @property
-    def ssh_args(self):
-        return {'hostname': self.name, 'python_path': 'python3', **self.group.connection, **self.connection}
+@dataclass(frozen=True)
+class InventoryHost:
+    id: str
+    groups: Set[InventoryGroup]
+    vars: Dict[str, Any]
+    connection_method: Connection
 
 
 class Inventory:
-    def __init__(self, fname='hosts.toml'):
-        with open(fname) as f:
-            config = toml.load(f)
+    @staticmethod
+    def create(settings_module=None):
+        if not settings_module:
+            settings_module = os.getenv('ANBRIC_SETTINGS_MODULE', 'settings')
 
-        self.groups = {s: Group(
-            name=s, hosts=[], vars=val.get('vars', {}), connection=val.get('_connection', {})
-        ) for s, val in config.items()}
+        return Inventory(settings_module)
 
-        for group in self.groups.values():
-            for host, host_config in config[group.name].items():
-                if host.startswith('_'):
-                    continue
+    def __init__(self, settings_module):
+        settings = importlib.import_module(settings_module)  # type: Any
 
-                group.hosts.append(Host(
-                    name=host, group=group,
-                    connection=host_config.get('_connection', {}),
-                    vars=host_config.get('vars', {})
-                ))
+        self.groups = {}
+        self.hosts = {}
+
+        if not getattr(settings, 'GROUPS', None):
+            settings.GROUPS = {'all': list(settings.HOSTS.keys())}
+
+        for host_id, host_data in settings.HOSTS.items():
+            self.hosts[host_id] = InventoryHost(host_id, set(), {}, host_data.connection)
+
+        for group_id, hosts in settings.GROUPS.items():
+            hosts_list = set()
+            group = InventoryGroup(group_id, hosts_list)
+            self.groups[group_id] = group
+
+            for host in hosts:
+                # TODO nested groups?
+                inv_host = self.hosts[host]
+                inv_host.groups.add(group)
+                hosts_list.add(inv_host)
 
     def get_hosts(self, selector):
         if selector == 'all':
@@ -74,22 +96,23 @@ class Inventory:
             return self.groups[selector].hosts
 
         for h in self.all_hosts():
-            if selector == h.name:
+            if selector == h.id:
                 return [h]
 
-        raise ValueError(f'No group or host matches {selector}')  # TODO user-friendly
+        raise SelectorDoesntMatch(f'No group or host matches {selector}')
 
     def all_hosts(self):
-        for g in self.groups.values():
-            for h in g.hosts:
-                yield h
+        return self.hosts.values()
 
 
-def play_task(func, router, host):
+def play_task(func, router: Router, host: InventoryHost):
     Vars.vars['host'] = host
 
     kwargs = {p: Vars.vars[p] for p in inspect.signature(func).parameters if p in Vars.vars}
-    Vars.context = router.ssh(**host.ssh_args)
+    try:
+        Vars.context = router.connect()
+    except StreamError as e:
+        raise AnbricConnectionError(f'Error connecting to {host.id}: {e}')
 
     try:
         return func(**kwargs)

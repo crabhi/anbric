@@ -25,6 +25,7 @@ ansible = {version="^4", optional=true}
 mitogen = {git = "ssh://git@github.com/mitogen-hq/mitogen", rev = "5b505f5"}
 toml = "^0.10.2"
 click = "^8.0.3"
+rich = "^10.16.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6"

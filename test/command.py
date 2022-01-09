@@ -4,9 +4,8 @@ from anbric.core import play
 
 @play(hosts='all')
 def test_play(host):
-    print("Running at host", host.name)
+    print("Running at host", host.id)
     command('hostname')
-
 
 
 if __name__ == '__main__':
