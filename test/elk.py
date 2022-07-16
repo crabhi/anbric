@@ -3,8 +3,8 @@
 import os
 from pathlib import Path
 
-from fabfab import play, sudo, wait_for, handler
-from fabfab.ansible.builtin import copy, template, systemctl, uri, lookup
+from anbric.core import play, handler
+from anbric.ansible.builtin import copy, template, systemctl, uri, lookup
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONF_DIR = Path(os.path.join(HERE, 'conf'))
