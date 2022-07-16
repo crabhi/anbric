@@ -7,7 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from dataclasses import dataclass
-from typing import Dict, List, Any
+from typing import Dict, List, Any, TypeVar, Generic
 
 import mitogen
 import mitogen.master
@@ -30,6 +30,21 @@ class SelectorDoesntMatch(UserReadableError):
 
 class AnbricConnectionError(UserReadableError):
     pass
+
+
+T = TypeVar('T')
+
+
+@dataclass
+class AttrDiff(Generic[T]):
+    before: T
+    after: T
+
+
+@dataclass
+class Diff:
+    lines_diff: str = None
+    attrs_diff: dict[str, AttrDiff] = None
 
 
 @dataclass

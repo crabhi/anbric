@@ -100,5 +100,4 @@ def ansible_module(module_name, params):
     stdout = json.loads(received['stdout'])
     res = Result(rc=received['rc'], changed=stdout['changed'], res=stdout,
                  stdout=received['stdout'], stderr=received['stderr'])
-    print(res)
     return res
