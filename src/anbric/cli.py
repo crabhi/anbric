@@ -5,7 +5,7 @@ import sys
 import click as click
 from rich.logging import RichHandler
 
-from anbric.core import Inventory, UserReadableError, PLAY_MARKER
+from anbric.core import Inventory, UserReadableError, PLAY_MARKER, Result
 
 LOG = logging.getLogger(__name__)
 LOGGING_SETTINGS = {
@@ -41,9 +41,11 @@ def setup_logging(loglevel):
 @click.argument('playbook')
 @click.argument('play', required=False)
 @click.option('-l', '--loglevel', default='INFO')
-def anbric_play(inventory, playbook, play, loglevel):
+@click.option('-d', '--diff', is_flag=True, default=False)
+def anbric_play(inventory, playbook, play, loglevel, diff):
     setup_excepthook()
     setup_logging(loglevel)
+    Result.LOG_DIFF = diff
 
     if '.' not in sys.path:
         sys.path.append('.')

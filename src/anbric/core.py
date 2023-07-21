@@ -13,6 +13,7 @@ import mitogen
 import mitogen.master
 from mitogen.core import StreamError
 from mitogen.parent import Router, Context
+from rich.text import Text
 
 from anbric.api import Connection
 
@@ -57,6 +58,9 @@ class Result:
     changed: bool = None
     error: str = None
     res: dict = None
+    diff: list[str] | None = None
+
+    LOG_DIFF = False
 
     def log_result(self, logger):
         if self.rc == 0:
@@ -74,7 +78,15 @@ class Result:
             self.error_details(logger)
 
     def changed_details(self, logger):
-        pass
+        if self.diff and self.LOG_DIFF:
+            for line in self.diff.split('\n'):
+                if line.startswith('+'):
+                    style = 'green'
+                elif line.startswith('-'):
+                    style = 'red'
+                else:
+                    style = None
+                logger.info('%s', line, extra={'highlighter': lambda t: Text(str(t), style=style)} if style else {})
 
     def ok_details(self, logger):
         pass
@@ -108,7 +120,7 @@ def task(func):
         stdout = json.loads(received['stdout'])
         res = Result(task_name=name, rc=received['rc'],
                      changed=stdout.get('changed', None), res=stdout, stdout=received['stdout'],
-                     stderr=received['stderr'], msg=stdout['msg'])
+                     stderr=received['stderr'], msg=stdout['msg'], diff=stdout.get('diff'))
         VARS.results.append(res)
         res.log_result(LOG)
         return res

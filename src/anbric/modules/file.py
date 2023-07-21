@@ -40,9 +40,9 @@ def write_file(
             existing = df.readlines()
 
     new_lines = content.splitlines(keepends=True)
-    diff = b'\n'.join(difflib.diff_bytes(difflib.unified_diff, existing, new_lines,
+    diff = b''.join(difflib.diff_bytes(difflib.unified_diff, existing, new_lines,
                                          f'master:{src_path}'.encode('utf-8'),
-                                         f'{dest}'.encode('utf-8'))).decode('utf-8', errors='replace')
+                                         f'{os.path.abspath(dest)}'.encode('utf-8'))).decode('utf-8', errors='replace')
     if new_lines != existing:
         changed = True
         tmpdest_fd, tmpdest = tempfile.mkstemp(dir=dirname, prefix='.transfer_')
@@ -91,4 +91,4 @@ def copy(dest: str, src=None, content=None, name="copy"):
         with open(src, 'rb') as f:
             content = f.read()
 
-    return write_file(dest, content, name=name)
+    return write_file(dest, content, src_path=src, name=name)
