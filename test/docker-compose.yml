@@ -4,6 +4,7 @@ services:
     build: docker
     ports:
       - "127.0.1.1:2222:2222"
+    init: true
 
   ssh2:
     build: docker
