@@ -2,7 +2,7 @@ import logging
 
 from anbric.ansible.modules import command
 from anbric.core import play
-from anbric.modules.file import write_file
+from anbric.modules.file import write_file, copy
 
 LOG = logging.getLogger(__name__)
 
@@ -14,6 +14,7 @@ def test_play(host):
     write_file('test.txt', 'ahoj', mode=0o640)
     command('ls -l')
     command('cat test.txt')
+    copy(dest='.', src='elk.py')
 
 
 if __name__ == '__main__':

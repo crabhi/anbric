@@ -111,6 +111,7 @@ def task(func):
                      stderr=received['stderr'], msg=stdout['msg'])
         VARS.results.append(res)
         res.log_result(LOG)
+        return res
 
     return wrapper
 

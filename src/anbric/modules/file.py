@@ -84,10 +84,11 @@ def copy(dest: str, src=None, content=None, name="copy"):
     if (src is None) == (content is None):
         raise ValueError('You must set either src or content, not both')
 
+    if src and VARS.context.call(os.path.isdir, dest):
+        dest = os.path.join(dest, os.path.basename(src))
+
     if content is None:
         with open(src, 'rb') as f:
             content = f.read()
-            write_file(dest, content)
 
-    return Result(task_name=name, rc=0,
-                 changed=True, msg=dest, stdout="", stderr="")
+    return write_file(dest, content, name=name)
