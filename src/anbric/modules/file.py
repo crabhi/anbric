@@ -22,41 +22,50 @@ def write_file(
 ):
     dirname = os.path.dirname(dest)
 
-    if makedirs:
+    if dirname and makedirs:
         os.makedirs(dirname, exist_ok=True)
 
     if isinstance(content, str):
-        content = content.encode(encoding, errors='replace')
+        content = content.encode(encoding)
+
+    changed = False
 
     if not os.path.exists(dest):
         existing = []
+        existing_mode = None
     else:
-        with open(dest, 'r', encoding=encoding) as df:
+        with open(dest, 'rb') as df:
+            stat = os.fstat(df.fileno())
+            existing_mode = stat.st_mode & 0o777
             existing = df.readlines()
 
     new_lines = content.splitlines(keepends=True)
-    changed = new_lines != existing
-
-    diff = list(difflib.diff_bytes(difflib.unified_diff, existing, new_lines,
-                                   f'master:{src_path}'.encode('utf-8'),
-                                   f'{dest}'.encode('utf-8')))
-
-    tmpdest_fd, tmpdest = tempfile.mkstemp(dir=dirname, prefix='.transfer_')
-    try:
-        f = os.fdopen(tmpdest_fd, 'wb')
+    diff = b'\n'.join(difflib.diff_bytes(difflib.unified_diff, existing, new_lines,
+                                         f'master:{src_path}'.encode('utf-8'),
+                                         f'{dest}'.encode('utf-8'))).decode('utf-8', errors='replace')
+    if new_lines != existing:
+        changed = True
+        tmpdest_fd, tmpdest = tempfile.mkstemp(dir=dirname, prefix='.transfer_')
         try:
-            f.write(content)
-        finally:
-            f.close()
-        os.rename(tmpdest, dest)
-    except Exception:
-        os.unlink(tmpdest)
-        os.close(tmpdest_fd)
-        return {
-            "rc": 1,
-            "stderr": traceback.format_stack(),
-            "stdout": "",
-        }
+            f = os.fdopen(tmpdest_fd, 'wb')
+            try:
+                f.write(content)
+            finally:
+                f.close()
+            if mode:
+                os.chmod(tmpdest, mode)
+            os.rename(tmpdest, dest)
+        except Exception:
+            os.unlink(tmpdest)
+            os.close(tmpdest_fd)
+            return {
+                "rc": 1,
+                "stderr": traceback.format_stack(),
+                "stdout": "",
+            }
+    elif mode and existing_mode != mode:
+        changed = True
+        os.chmod(dest, mode)
 
     ret = {
         "diff": diff,
@@ -66,7 +75,8 @@ def write_file(
 
     return {
         "rc": 0,
-        "stdout": json.dumps(ret)
+        "stdout": json.dumps(ret),
+        "stderr": "",
     }
 
 
