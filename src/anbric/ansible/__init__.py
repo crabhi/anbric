@@ -6,7 +6,7 @@ import traceback
 
 from ansible_mitogen.runner import NewStyleStdio, TemporaryArgv, TempFileWatcher, AtExitWrapper
 
-from anbric.core import Vars, Result
+from anbric.core import VARS, Result
 
 
 class NewStyleRunner:
@@ -95,7 +95,7 @@ def _execute(module_name, args):
 
 
 def ansible_module(module_name, params):
-    received = Vars.context.call(_execute, module_name, params)
+    received = VARS.context.call(_execute, module_name, params)
 
     stdout = json.loads(received['stdout'])
     res = Result(rc=received['rc'], changed=stdout['changed'], res=stdout,

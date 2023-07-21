@@ -7,7 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 from dataclasses import dataclass
-from typing import Dict, List, Any, TypeVar, Generic
+from typing import Dict, List, Any, TypeVar, Generic, Optional
 
 import mitogen
 import mitogen.master
@@ -62,15 +62,15 @@ class Result:
         if self.rc == 0:
             if self.changed:
                 logger.warning('[yellow]TASK %s \\[%s]: changed[/]',
-                               self.task_name, Vars.vars['host'].id, extra={'markup': True})
+                               self.task_name, VARS.vars['host'].id, extra={'markup': True})
                 self.changed_details(logger)
             else:
                 logger.warning('[green]TASK %s \\[%s]: ok[/]',
-                               self.task_name, Vars.vars['host'].id, extra={'markup': True})
+                               self.task_name, VARS.vars['host'].id, extra={'markup': True})
                 self.ok_details(logger)
         else:
             logger.warning('[red]TASK %s \\[%s]: error[/]',
-                           self.task_name, Vars.vars['host'].id, extra={'markup': True})
+                           self.task_name, VARS.vars['host'].id, extra={'markup': True})
             self.error_details(logger)
 
     def changed_details(self, logger):
@@ -89,8 +89,11 @@ class Vars(threading.local):
     results: List[Result]
 
 
+VARS = Vars()
+
+
 def task(func):
-    # Don't wrap in child contexts - recursion trying to call within Vars.context
+    # Don't wrap in child contexts - recursion trying to call within VARS.context
     if not mitogen.is_master:
         return func
 
@@ -100,13 +103,13 @@ def task(func):
         if name is None:
             name = func.__name__
 
-        received = Vars.context.call(func, *args, **kwargs)
+        received = VARS.context.call(func, *args, **kwargs)
 
         stdout = json.loads(received['stdout'])
         res = Result(task_name=name, rc=received['rc'],
                      changed=stdout.get('changed', None), res=stdout, stdout=received['stdout'],
                      stderr=received['stderr'], msg=stdout['msg'])
-        Vars.results.append(res)
+        VARS.results.append(res)
         res.log_result(LOG)
 
     return wrapper
@@ -184,22 +187,23 @@ class Inventory:
 
 
 def play_task(func, router: Router, host: InventoryHost):
-    Vars.vars['host'] = host
+    VARS.vars = {'host': host}
+    VARS.results = []
 
-    kwargs = {p: Vars.vars[p] for p in inspect.signature(func).parameters if p in Vars.vars}
-    Vars.results = []
+    kwargs = {p: VARS.vars[p] for p in inspect.signature(func).parameters if p in VARS.vars}
     try:
-        Vars.context = router.connect(host.connection_method.connection_method_name(),
+        VARS.context = router.connect(host.connection_method.connection_method_name(),
                                       **host.connection_method.__dict__)
     except StreamError as e:
         raise AnbricConnectionError(f'Error connecting to {host.id}: {e}')
 
     try:
         func(**kwargs)
-        return Vars.results
+        return VARS.results
     finally:
-        Vars.results = []
-        Vars.context = None
+        del VARS.results
+        del VARS.context
+        del VARS.vars
 
 
 # TODO jinja templating
@@ -212,7 +216,7 @@ def play(func=None, *, hosts='all', max_workers=4):
             LOG.warning('Hosts: %s', hosts)
             play_hosts = inventory.get_hosts(hosts)
             LOG.info('Hosts list: %s', [h.id for h in play_hosts])
-            Vars.vars = {}
+            VARS.vars = {}
 
             broker = mitogen.master.Broker()
             router = mitogen.master.Router(broker)
@@ -236,7 +240,7 @@ def play(func=None, *, hosts='all', max_workers=4):
                     return last_exc is None, results
 
             finally:
-                Vars.vars = None
+                VARS.vars = None
                 broker.shutdown()
 
         _executable.anbric_type = PLAY_MARKER
@@ -246,6 +250,3 @@ def play(func=None, *, hosts='all', max_workers=4):
         return wrapper(func)
     else:
         return wrapper
-
-
-variables = Vars()

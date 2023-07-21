@@ -8,7 +8,7 @@ from typing import Union
 
 from ansible_mitogen.target import transfer_file
 
-from anbric.core import Vars, Result, task
+from anbric.core import VARS, Result, task
 
 
 @task

@@ -73,3 +73,7 @@ def anbric_play(inventory, playbook, play, loglevel):
         except Exception:
             LOG.exception(f'Exception in play {playbook}.{play}', stacklevel=5)
             exit(1)
+
+
+if __name__ == '__main__':
+    anbric_play()

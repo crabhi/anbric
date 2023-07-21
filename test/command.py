@@ -9,6 +9,7 @@ LOG = logging.getLogger(__name__)
 @play(hosts='all')
 def test_play(host):
     LOG.warning("Running at host %s", host.id)
+    command('sleep 1')
     command('hostname')
 
 
