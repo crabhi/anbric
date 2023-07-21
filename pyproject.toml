@@ -21,7 +21,7 @@ anbric-play = 'anbric.cli:anbric_play'
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
-ansible = {version="^4", optional=true}
+ansible = {version="^8"}
 mitogen = {git = "ssh://git@github.com/mitogen-hq/mitogen", rev = "5b505f5"}
 toml = "^0.10.2"
 click = "^8.0.3"
@@ -33,4 +33,3 @@ ipython = "*"
 
 [tool.poetry.extras]
 ansible = ["ansible"]
-

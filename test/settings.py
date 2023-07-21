@@ -5,9 +5,9 @@ from anbric.api import Host, SSHConnection, GroupDefaults
 PROJECT_DIR = Path(__file__).absolute().parent
 
 HOSTS = {
-    'test1': Host(SSHConnection(hostname='127.0.1.1')),
-    'test2': Host(SSHConnection(hostname='127.0.1.2')),
-    'test3': Host(SSHConnection(hostname='127.0.1.3')),
+    'test1': Host(SSHConnection(hostname='127.0.1.1', port=2222)),
+    'test2': Host(SSHConnection(hostname='127.0.1.1', port=2223)),
+    'test3': Host(SSHConnection(hostname='127.0.1.1', port=2224)),
 }
 
 GROUPS = {

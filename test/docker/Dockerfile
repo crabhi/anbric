@@ -1,4 +1,4 @@
-FROM debian:11
+FROM debian:12
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y openssh-server --no-install-recommends \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y sudo python3 vim \
@@ -13,7 +13,8 @@ RUN chmod u=rwX,go= /home/user/.ssh \
 
 ADD host_key /etc/ssh/ssh_host_ed25519_key
 RUN chmod 0600 /etc/ssh/ssh_host_ed25519_key
+RUN echo Port 2222 >> /etc/ssh/sshd_config
 
 ENTRYPOINT ["bash", "-c", "service ssh start && while true; do sleep 10; done"]
 
-EXPOSE 22
+EXPOSE 2222
